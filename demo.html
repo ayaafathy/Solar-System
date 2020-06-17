@@ -1,0 +1,247 @@
+﻿
+<html lang="en">
+<head>
+    <title>three.js webgl - geometry - cube</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <style>
+        body {
+            margin: 0px;
+            background-color: #000000;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <script src="build/three.js"></script>
+    <script src="js/controls/OrbitControls.js"></script>
+
+
+    <script>
+
+    var camera, scene, renderer, controls, light, texture;
+    var planets = [];
+
+    var timestamp = 0;
+    var scaleVector = new THREE.Vector3();
+
+    init();
+    animate();
+
+
+    function init()
+    {
+
+       scene = new THREE.Scene();
+       camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
+       camera.position.set(0, 100, 400);
+
+
+       renderer = new THREE.WebGLRenderer({antialias: true});
+       renderer.setSize(window.innerWidth, window.innerHeight);
+       document.body.appendChild(renderer.domElement);
+
+        ////CONTROLS///
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1;
+
+        controls.screenSpacePanning = false;
+
+        controls.minDistance = 80;
+        controls.maxDistance = 700;
+
+        //controls.maxPolarAngle = Math.PI / 2;
+
+        controls.keys =
+        {
+            LEFT: 37,
+            UP: 38,
+            RIGHT: 39,
+            BOTTOM: 40
+        }
+
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+        /*var light = new THREE.DirectionalLight(0xffffff, 1);
+	    light.position.set(5,3,5);
+	    scene.add(light);*/
+ 
+        light = new THREE.PointLight( 0xffffff, 4, 1000);
+        //light.position.x = 500;
+        light.position.y = 500;
+        light.position.z = 700;
+        scene.add(light);
+
+
+
+       var createPlanet = function(name, radius, orbit, speed)
+       {
+           var geom = new THREE.SphereGeometry(radius, 32, 16);
+
+           
+
+             if (name == "Mercury")
+             {
+                 texture  = new THREE.TextureLoader().load('2mercury.jpg');   
+             }
+             else if (name == "Venus")
+             {
+                 texture  = new THREE.TextureLoader().load('3venus.jpg');   
+             }
+             else if (name == "Earth")
+             {
+                    texture = new THREE.TextureLoader().load('4earth.jpg');
+             }
+             else if (name == "Mars")
+             {
+                 texture = new THREE.TextureLoader().load('5mars.jpg');
+             }
+             else if (name == "Jupiter")
+             {
+                 texture = new THREE.TextureLoader().load('6jupiter.jpg');
+             }
+             else if (name == "Saturn")
+             {
+                 texture = new THREE.TextureLoader().load('7saturn.jpg');
+             }
+             else if (name == "Uranus")
+             {
+                 texture = new THREE.TextureLoader().load('8uranus.jpg');
+
+
+                 /*var RingGeo2 = new THREE.RingBufferGeometry( 80, 75, 40);
+                 var texture = new THREE.TextureLoader().load ('uranusringcolour.jpg');
+                 var material = new THREE.MeshBasicMaterial( { map:texture ,side: THREE.DoubleSide } );
+                 RingMesh2 = new THREE.Mesh( RingGeo2, material );
+                 //RingMesh2.position.y=10;
+                 //RingMesh2.rotation.x=500;
+                 scene.add(RingMesh2);*/
+
+             }
+             else if (name == "Neptune")
+             {
+                 texture = new THREE.TextureLoader().load('9neptune.jpg');
+             }
+
+
+           var material = new THREE.MeshPhongMaterial({ map: texture }); 
+           var planet = new THREE.Mesh(geom, material);
+           planet.userData.orbit = orbit;
+           planet.userData.speed = speed;
+
+
+          var canvas = document.createElement('canvas');
+          canvas.width = 256;
+          canvas.height = 256;
+          /*var ctx = canvas.getContext("2d");
+          ctx.font = "44pt Arial";
+          ctx.fillStyle = "white";
+          ctx.textAlign = "center";
+          ctx.fillText(name, 128, 44);*/
+
+        //console.log(ctx);
+
+          var tex = new THREE.Texture(canvas);
+          tex.needsUpdate = true;
+
+           var spriteMat = new THREE.SpriteMaterial({ map: tex });
+           var sprite = new THREE.Sprite(spriteMat);
+           planet.add(sprite);
+
+
+           planets.push(planet);
+           scene.add(planet);
+
+
+          //orbit
+          var shape = new THREE.Shape();
+          shape.moveTo(orbit, 0);
+          shape.absarc(0, 0, orbit, 0, 2 * Math.PI, false);
+          var spacedPoints = shape.createSpacedPointsGeometry(128);
+          spacedPoints.rotateX(THREE.Math.degToRad(-90));
+          var orbit = new THREE.Line(spacedPoints, new THREE.LineBasicMaterial({color: 0xffffff }));
+          scene.add(orbit);
+
+           
+       };
+
+    createPlanet("Mercury", 5, 60, 5);
+    createPlanet("Venus", 7.5, 80, 3);
+    createPlanet("Earth", 10, 100, 4);
+    createPlanet("Mars", 9, 120, 2);
+    createPlanet("Jupiter", 15, 160, 0.8);
+    createPlanet("Saturn", 12.5, 180, 0.5);
+    createPlanet("Uranus", 8.75, 200, 0.4);
+    createPlanet("Neptune", 4, 220, 0.2);
+
+    //console.log(planets[0].children[0].position.x);
+
+
+
+    var sunGeo = new THREE.SphereGeometry(25, 72, 36);
+    sunTex =  new THREE.TextureLoader().load('1sun.jpg'); 
+    var sunMat = new THREE.MeshBasicMaterial({ map: sunTex }); 
+    var sun = new THREE.Mesh(sunGeo, sunMat);
+    scene.add(sun);
+
+
+
+
+    var starsGeometry = new THREE.Geometry();
+    for (var i = 0; i < 100000; i++)
+    {
+	    var star = new THREE.Vector3();
+	    star.x = THREE.Math.randFloatSpread( 5000 );
+	    star.y = THREE.Math.randFloatSpread( 5000 );
+	    star.z = THREE.Math.randFloatSpread( 5000 );
+	    starsGeometry.vertices.push( star );
+    }
+    var starsMaterial = new THREE.PointsMaterial( { color: 0x888888 } );
+    var starField = new THREE.Points( starsGeometry, starsMaterial );
+    scene.add(starField);
+
+
+    }
+
+
+
+
+    function animate()
+    {
+        timestamp = Date.now() * 0.0001;
+        requestAnimationFrame(animate);
+
+        planets.forEach(function (planet)
+        {
+            planet.rotation.y += 0.1;
+
+            var scaleFactor = 8;
+            var sprite = planet.children[0];
+            var scale = scaleVector.subVectors(planet.position, camera.position).length() / scaleFactor;
+            sprite.scale.set(scale, scale, 1);
+            var orbit = planet.userData.orbit;
+            var speed = planet.userData.speed;
+            planet.position.x = Math.cos(timestamp * speed) * orbit;
+            planet.position.z = Math.sin(timestamp * speed) * orbit;
+
+            controls.update();
+
+        });
+
+        render();
+    }
+
+
+    function render()
+    {
+        renderer.render(scene, camera);
+    }
+
+    </script>
+</body>
+</html>
